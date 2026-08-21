@@ -16,3 +16,6 @@ scratchpad/
 
 # PlatformIO build cache anywhere
 **/.pio/
+
+# local project notes — not published
+STATUS.md
