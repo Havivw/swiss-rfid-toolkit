@@ -1,11 +1,11 @@
 App(
     appid="dualtech_scan",
-    name="Dual-Tech Scan",
+    name="Card ID",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="dualtech_scan_app",
     stack_size=4 * 1024,
     fap_category="NFC",
-    fap_description="Scan a card on both 125kHz LF and 13.56MHz HF and flag combo (dual-tech) cards used in weak OR-logic access systems.",
+    fap_description="Identify a card on 125kHz LF + 13.56MHz HF: names the technology, gives a security verdict, and flags dual-tech (OR-logic) combo cards. Points iCLASS to the Picopass app. Authorized use only.",
     fap_version="1.0",
     fap_icon="icon.png",
 )

@@ -54,7 +54,26 @@ typedef struct {
     bool hf_found;
     char lf_result[28];
     char hf_result[28];
+    char hf_verdict[22]; /* security posture of the detected HF tech */
 } App;
+
+/* map a detected HF protocol to a short security verdict (from HF Card ID) */
+static const char* hf_verdict_for(NfcProtocol p) {
+    switch(p) {
+    case NfcProtocolMfClassic: return "BROKEN Crypto1";
+    case NfcProtocolMfUltralight: return "CLONE (UL/NTAG)";
+    case NfcProtocolMfDesfire: return "SECURE* AES";
+    case NfcProtocolMfPlus: return "SECURE* AES";
+    case NfcProtocolIso14443_4a:
+    case NfcProtocolIso14443_4b: return "SMARTCARD APDU";
+    case NfcProtocolEmv: return "PAYMENT-no clone";
+    case NfcProtocolIso15693_3:
+    case NfcProtocolSlix:
+    case NfcProtocolSt25tb: return "15693 vicinity";
+    case NfcProtocolFelica: return "FeliCa";
+    default: return "CLONE (UID)";
+    }
+}
 
 /* -------------------------- LF scan (lfrfid worker + timeout) ------------- */
 
@@ -147,9 +166,11 @@ static void hf_scan(App* app) {
     if(ok && r.count > 0) {
         const char* pn = nfc_device_get_protocol_name(r.top);
         snprintf(app->hf_result, sizeof(app->hf_result), "%s", pn ? pn : "?");
+        snprintf(app->hf_verdict, sizeof(app->hf_verdict), "%s", hf_verdict_for(r.top));
         app->hf_found = true;
     } else {
         snprintf(app->hf_result, sizeof(app->hf_result), "none");
+        app->hf_verdict[0] = '\0';
         app->hf_found = false;
     }
     furi_mutex_release(app->mutex);
@@ -174,32 +195,33 @@ static void draw_cb(Canvas* c, void* ctx) {
         canvas_draw_str(c, 2, 32, "Scanning LF+HF...");
         canvas_draw_str(c, 2, 44, "keep card still");
     } else { /* SceneResult */
-        char buf[36];
+        char buf[40];
         snprintf(buf, sizeof(buf), "LF: %s", app->lf_result);
-        canvas_draw_str(c, 2, 24, buf);
+        canvas_draw_str(c, 2, 22, buf);
         snprintf(buf, sizeof(buf), "HF: %s", app->hf_result);
-        canvas_draw_str(c, 2, 34, buf);
+        canvas_draw_str(c, 2, 32, buf);
 
+        /* primary verdict box: combo risk wins, else the HF security posture */
         canvas_set_font(c, FontPrimary);
-        if(app->lf_found && app->hf_found) {
-            canvas_draw_box(c, 0, 40, 128, 12);
-            canvas_set_color(c, ColorWhite);
-            canvas_draw_str(c, 2, 50, "DUAL-TECH combo!");
-            canvas_set_color(c, ColorBlack);
-        } else if(app->lf_found) {
-            canvas_draw_str(c, 2, 50, "LF only");
-        } else if(app->hf_found) {
-            canvas_draw_str(c, 2, 50, "HF only");
-        } else {
-            canvas_draw_str(c, 2, 50, "no card seen");
-        }
+        canvas_draw_box(c, 0, 38, 128, 13);
+        canvas_set_color(c, ColorWhite);
+        if(app->lf_found && app->hf_found)
+            canvas_draw_str(c, 2, 48, "DUAL-TECH combo!");
+        else if(app->hf_found)
+            canvas_draw_str(c, 2, 48, app->hf_verdict);
+        else if(app->lf_found)
+            canvas_draw_str(c, 2, 48, "LF CLONE (static)");
+        else
+            canvas_draw_str(c, 2, 48, "no card seen");
+        canvas_set_color(c, ColorBlack);
+
         canvas_set_font(c, FontSecondary);
         /* LF present but no ISO14443/15693 HF -> HF is likely iCLASS/Picopass,
-         * which this tool can't see (use the stock Picopass app). */
+         * which is not exposed to apps (use the built-in Picopass app). */
         if(app->lf_found && !app->hf_found)
-            canvas_draw_str(c, 2, 62, "iCLASS? HF Card ID/Picopass");
+            canvas_draw_str(c, 2, 62, "iCLASS? use Picopass app");
         else
-            canvas_draw_str(c, 2, 62, "OK rescan  Back menu");
+            canvas_draw_str(c, 2, 62, "OK rescan  Back exit");
     }
     furi_mutex_release(app->mutex);
 }

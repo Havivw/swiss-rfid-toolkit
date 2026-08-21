@@ -1,19 +1,17 @@
 SwissNFC/RFID — Flipper Zero lab audit toolkit
 ==============================================
 
-Eleven companion apps for AUTHORIZED RFID/NFC security work. Built against MOMENTUM
+Nine companion apps for AUTHORIZED RFID/NFC security work. Built against MOMENTUM
 firmware (API 87.1). Rebuild from the source/ folders for other firmware.
 
   em4100_stepper/    "RFID Stepper"     LF 125kHz  read/step/emulate/sweep; HID card# sweep
   nfc_uid_stepper/   "NFC UID Stepper"  HF 13.56   UID read/step/emulate/sweep + verdict
-  nfc_id/            "HF Card ID"       HF         identify HF tech + security verdict
   reader_audit/      "Reader Audit"     HF         UID-only vs crypto; writes-back; report
-  dualtech_scan/     "Dual-Tech Scan"   LF+HF      detect combo cards (+ iCLASS hint)
+  dualtech_scan/     "Card ID"          LF+HF      identify LF+HF tech + verdict + combo
   card_audit/        "Card Audit"       LF+HF      AUTHORIZED: read/verify/report to SD
   blank_validator/   "Blank Validator"  LF+HF      is this blank writeable? which magic type?
   clone_writer/      "Clone Writer"     HF         write a MFC dump onto a magic blank
   cloner_sniff/      "Cloner Sniffer"   HF         log a writer/cloner's frames + nonces
-  gen3_test/         "Gen3 Probe"       HF         non-destructive Gen3 (APDU) magic test
   card_emu/          "Card Emulator"    HF         the Flipper BECOMES a saved card
   research/vulnerability-catalog.md   card-side vuln catalog + detection signatures
   research/clone-and-vuln-reference.html  the "can I clone this card?" (dd) model + vuln matrix
@@ -45,18 +43,6 @@ RFID Stepper (LF)  &  NFC UID Stepper (HF)
   code, and the protocol recomputes Wiegand parity, so every step is a valid
   credential. Auto-selected when an HID card is read.
 
-HF Card ID (HF)  -- NEW
-  One tap identifies the card technology and its security posture, and points you
-  at the right tool:
-    Mifare Classic -> BROKEN (Crypto1) -> Card Audit / MFKey
-    Ultralight/NTAG -> CLONE (unauth pages)
-    DESFire / Mifare Plus -> SECURE* (AES; config-audit only)
-    ISO14443-4 -> SMARTCARD (APDU) ;  EMV -> PAYMENT (do NOT clone)
-    ISO15693/SLIX/ST25 -> vicinity tag (NOT iClass) ;  FeliCa -> transit/secure
-    nothing standard answers -> "iCLASS? use Picopass"  (iClass is not exposed to
-      external apps; the built-in Picopass app is the tool)
-  Appends each result to /ext/hf_card_id.txt.
-
 Reader Audit (HF)
   Menu: Read card + audit (read a valid card, then emulate it) / Audit (default UID).
   Classifies what the reader does after selecting the card:
@@ -68,10 +54,12 @@ Reader Audit (HF)
   NOTE: to collect mfkey32 nonces from a reader, use Cloner Sniffer "Emul MFC"
   (writes /ext/nfc/.mfkey32.log) + the MFKey app.
 
-Dual-Tech Scan (LF+HF)
-  Hold ONE card, press OK: reads it on LF then HF (full NFC scanner) and flags
-  DUAL-TECH combo cards (OR-logic risk). If LF is present but no ISO14443/15693 HF
-  answers, it hints "iCLASS? HF Card ID/Picopass".
+Card ID (LF+HF)
+  Hold ONE card, press OK: reads it on 125kHz LF then 13.56MHz HF (full NFC
+  scanner), NAMES the technology, and gives a security VERDICT for the HF tech
+  (BROKEN Crypto1 / CLONE / SECURE* AES / 15693 / PAYMENT / etc.). Flags
+  DUAL-TECH combo cards (weak OR-logic access). If LF is present but no standard
+  HF answers, hints "iCLASS? use Picopass app" (iClass isn't exposed to apps).
 
 Card Audit (LF+HF)  -- AUTHORIZED USE ONLY
   Confirm the authorization gate, then:
@@ -97,7 +85,7 @@ Blank Validator (LF+HF)
     HF -> NTAG/UL (user page), Mifare Classic magic identifier:
         gen1a backdoor probe            -> "HF gen1a"
         gen2/CUID raw block-0 write      -> "HF CUID/gen2" (also GDM backdoor auth)
-        gen3 90F0 probe                  -> "HF gen3"
+        gen3 90F0 probe                  -> "HF gen3"  (replaces the old Gen3 Probe app)
         else data-block write            -> memory writeable, not magic
   NOTE: HF tests MEMORY writeability + magic type; it does not perform a magic
   UID clone (use NFC Magic / Clone Writer).
@@ -115,11 +103,6 @@ Cloner Sniffer (HF)  -- AUTHORIZED RESEARCH ONLY
       completes auth against the Flipper, its writes land in emulated memory (diffed
       afterward), and every auth nonce is captured to /ext/nfc/.mfkey32.log for MFKey.
   Not a wire sniffer; it is a trap the writer talks to.
-
-Gen3 Probe (HF)
-  Non-destructive Gen3 (APDU) magic test: rewrites block 0 with its OWN data via
-  90F0CCCC. If accepted, the card is Gen3 and its UID can be set with 90F0/90FB
-  (which no auth-based tool catches). Writes /ext/gen3_probe.txt.
 
 Card Emulator (HF)  -- the one-device wallet
   Pick a saved .nfc and the Flipper BECOMES that card (full Mifare Classic + keys,
@@ -152,13 +135,13 @@ These official/third-party tools fill gaps this toolkit intentionally leaves.
   NFC Magic (flipperzero-good-faps/nfc_magic)  -- INSTALL
     Writes MAGIC cards: Gen1A/Gen1B, Gen2 (DirectWrite/CUID/FUID/UFUID),
     Gen4 GTU (with password). The proper tool for UID cloning onto magic blanks.
-    Does NOT support Gen3 (APDU) or Gen4 GDM (see Gen3 Probe).
+    Does NOT support Gen3 (APDU) or Gen4 GDM (Blank Validator flags Gen3).
 
   Picopass (built-in / app catalog)  -- for iCLASS/HID 13.56
     iCLASS/Picopass is NOT in the Flipper's shared NFC library and cannot be read
     by an external app. The Picopass app carries its own stack: read iClass Legacy,
     dump PACS, loclass online nonce collection, emulate, write magic iClass.
-    HF Card ID / Dual-Tech Scan point you here when a card is likely iClass.
+    Card ID points you here when a card is likely iClass.
 
   NFCMiTM (github.com/a66at/NFCMiTM)  -- optional, hardware
     True inline relay MITM: Raspberry Pi + two PN532 readers, logs the full
@@ -176,7 +159,7 @@ TYPICAL LAB CHAINS
   Clone a UID onto a magic blank:
     Card Audit (dump source) -> Blank Validator (id the blank type) ->
     NFC Magic (gen1a/2/4-GTU)  OR  Clone Writer (gen2 memory)  OR
-    Gen3 Probe (if the target is Gen3 APDU)
+    Blank Validator flags Gen3 APDU targets
   Be the card (no clone needed):
     Card Audit (dump) -> Card Emulator (Flipper becomes it)
   Audit a reader:

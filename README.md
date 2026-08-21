@@ -20,19 +20,17 @@ Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 |-----|------|--------------|
 | **RFID Stepper** | LF 125 kHz | Read an EM4100 ID, step it up/down, emulate / auto-sweep; pause + quick-save; per-byte truncation test; Wiegand/HID decode. **HID-aware `Cn` mode**: sweep an H10301 card number holding the facility code (parity recomputed) = reader acceptance-oracle. |
 | **NFC UID Stepper** | HF 13.56 | Same stepping/emulation for ISO14443-A UID; verdict via ATQA/SAK + DESFire GetVersion. |
-| **HF Card ID** | HF | One-tap identify: names the card technology (ISO14443-A/B, ISO15693/SLIX, FeliCa, Mifare, DESFire, EMV) + security verdict + which tool applies; flags likely iCLASS/Picopass for the Picopass app. |
 | **Reader Audit** | HF | Emulate a card to a reader and classify it: **UID-only** vs **crypto** (RATS/auth), and flag **writes-back** (anti-passback/counter). Saves a report. |
-| **Dual-Tech Scan** | LF+HF | Detect combo cards; flag OR-logic; point iCLASS cases to HF Card ID / Picopass. |
+| **Card ID** | LF+HF | Identify a card on both bands: names the LF/HF technology, gives a security verdict, flags **dual-tech (OR-logic) combo** cards, and points iCLASS to the Picopass app. |
 | **Card Audit** | LF+HF | Authorization-gated read → classify → **actively verify** (Mifare Classic 37-key dictionary dump + save clone; **static-key** + **Fudan-backdoor** flags; DESFire generation + config; NTAG page) → SD report + viewer; load `.nfc` offline. |
 | **Blank Validator** | LF+HF | Non-destructive writeability test + **magic identifier**: gen1a / CUID-gen2 / **gen3** / GDM / proprietary / normal. Auto LF-then-HF scan. |
 | **Clone Writer** | HF | Write a Mifare Classic dump onto a magic blank — from a live-read source **or** a saved `.nfc`; multi-key per block. |
 | **Cloner Sniffer** | HF | Card-emulation trap: emulate a card and log every frame a writer/cloner sends (passive / ACK-knocks / raw / full-MFC), capturing auth nonces for MFKey. |
-| **Gen3 Probe** | HF | Non-destructive Gen3 (APDU) test — rewrites block 0 with its own data via `90F0CCCC`. |
 | **Card Emulator** | HF | The Flipper *becomes* any saved card (full Mifare Classic + keys, UID, or Ultralight). Emulate instead of clone. |
 
 ## Install (no build)
 
-Copy the eleven `.fap` files from [`release/swissnfcrfid/`](release/swissnfcrfid) into a
+Copy the nine `.fap` files from [`release/swissnfcrfid/`](release/swissnfcrfid) into a
 folder `apps/swissnfcrfid/` on the Flipper SD card (qFlipper or the mobile app). They
 appear together under **Apps → swissnfcrfid** on the device.
 
@@ -59,7 +57,7 @@ This toolkit intentionally leaves some gaps that purpose-built tools fill:
   2× PN532) for ISO14443-4 / APDU protocol capture.
 
 **Lab chains:** `Detect Reader → MFKey → Card Audit → Clone Writer` (crack, dump, clone) ·
-`Card Audit → Blank Validator → NFC Magic / Clone Writer` (clone onto a blank) ·
+`Card Audit → Blank Validator (id blank + gen1a/2/3/GDM) → NFC Magic / Clone Writer` ·
 `Card Audit → Card Emulator` (become the card — no clone needed).
 
 ## Docs
