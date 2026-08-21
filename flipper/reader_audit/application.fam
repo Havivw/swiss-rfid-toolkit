@@ -5,7 +5,7 @@ App(
     entry_point="reader_audit_app",
     stack_size=4 * 1024,
     fap_category="NFC",
-    fap_description="Emulate a card to a reader and classify whether it accepts on UID alone or performs crypto (RATS/auth). Spots UID-only misconfigurations.",
+    fap_description="Reader audit v2: detect an HF/LF reader field, then emulate a card and classify what the reader does (UID-only vs crypto, writes-back). Saves a report. Authorized use only.",
     fap_version="1.0",
     fap_icon="icon.png",
 )
