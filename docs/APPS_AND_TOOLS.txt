@@ -1,20 +1,27 @@
 SwissNFC/RFID — Flipper Zero lab audit toolkit
 ==============================================
 
-Six companion apps for authorized RFID/NFC security work. Built against MOMENTUM
+Eleven companion apps for AUTHORIZED RFID/NFC security work. Built against MOMENTUM
 firmware (API 87.1). Rebuild from the source/ folders for other firmware.
 
-  rfid_stepper/       "RFID Stepper"     LF 125kHz  read/step/emulate/sweep + verdict
-  nfc_uid_stepper/    "NFC UID Stepper"  HF 13.56   UID read/step/emulate/sweep + verdict
-  reader_audit/       "Reader Audit"     HF         is the reader UID-only or crypto?
-  dualtech_scan/      "Dual-Tech Scan"   LF+HF      detect combo cards (+ iCLASS hint)
-  card_audit/         "Card Audit"       LF+HF      AUTHORIZED: read/verify/report to SD
-  blank_validator/    "Blank Validator"  LF+HF      is this blank card writeable? which type?
-  VULN_CATALOG.md     sourced vulnerability catalog + detection signatures
+  em4100_stepper/    "RFID Stepper"     LF 125kHz  read/step/emulate/sweep; HID card# sweep
+  nfc_uid_stepper/   "NFC UID Stepper"  HF 13.56   UID read/step/emulate/sweep + verdict
+  nfc_id/            "HF Card ID"       HF         identify HF tech + security verdict
+  reader_audit/      "Reader Audit"     HF+LF      detect HF/LF reader; UID-only vs crypto
+  dualtech_scan/     "Dual-Tech Scan"   LF+HF      detect combo cards (+ iCLASS hint)
+  card_audit/        "Card Audit"       LF+HF      AUTHORIZED: read/verify/report to SD
+  blank_validator/   "Blank Validator"  LF+HF      is this blank writeable? which magic type?
+  clone_writer/      "Clone Writer"     HF         write a MFC dump onto a magic blank
+  cloner_sniff/      "Cloner Sniffer"   HF         log a writer/cloner's frames + nonces
+  gen3_test/         "Gen3 Probe"       HF         non-destructive Gen3 (APDU) magic test
+  card_emu/          "Card Emulator"    HF         the Flipper BECOMES a saved card
+  VULN_CATALOG.md    sourced vulnerability catalog + detection signatures
+  RFID_clone_reference.html   the "can I clone this card?" (dd) model + vuln matrix
+  research/          reader-side security research corpus (sourced)
 
 --------------------------------------------------------------------------------
 INSTALL (no build)
-  Create a folder  apps/swissnfcrfid  on the Flipper SD card and copy all six
+  Create a folder  apps/swissnfcrfid  on the Flipper SD card and copy all eleven
   .fap files into it (qFlipper desktop or the mobile app). They then appear
   together under  Apps -> swissnfcrfid  on the device.
 
@@ -26,55 +33,102 @@ RFID Stepper (LF)  &  NFC UID Stepper (HF)
     HF -> BROKEN (Crypto1 / orig DESFire) / SECURE (DESFire EV1+) / CLONE (UL/NTAG)
           / UNK ; DESFire generation via GetVersion ; RND = random-UID (privacy).
   Edit controls:
-    Left/Right pick field (ID / Pos / step / delay / dir[/len])
+    Left/Right pick field (ID / Pos / step / delay / dir)
     Up/Down    change field
     OK         start sweep -> pause -> resume
     OK (hold)  quick-save current card to file (shows "Saved ..." confirmation)
     Back       stop the sweep / back to menu
   TRUNCATION TEST: set field "Pos" to a byte (B0..Bn) to step only that byte;
   sweep it and watch the door -> if access is unchanged, the reader truncates it.
-  RFID Stepper also decodes structured formats (e.g. HID facility code / card no).
+  HID ACCEPTANCE-ORACLE (NEW): read an HID Prox (H10301) card and "Pos" gains a
+  "Cn" value -> Up/Down sweeps the 16-bit CARD NUMBER while holding the facility
+  code, and the protocol recomputes Wiegand parity, so every step is a valid
+  credential. Auto-selected when an HID card is read.
 
-Reader Audit (HF)
-  Emulate a card to a reader and classify what it does after selecting the card:
-    UID-ONLY!  = read the UID then halted, no further command  (INSECURE)
-    CRYPTO     = sent RATS / auth (ISO14443-4 / Mifare)         (uses card crypto)
+HF Card ID (HF)  -- NEW
+  One tap identifies the card technology and its security posture, and points you
+  at the right tool:
+    Mifare Classic -> BROKEN (Crypto1) -> Card Audit / MFKey
+    Ultralight/NTAG -> CLONE (unauth pages)
+    DESFire / Mifare Plus -> SECURE* (AES; config-audit only)
+    ISO14443-4 -> SMARTCARD (APDU) ;  EMV -> PAYMENT (do NOT clone)
+    ISO15693/SLIX/ST25 -> vicinity tag (NOT iClass) ;  FeliCa -> transit/secure
+    nothing standard answers -> "iCLASS? use Picopass"  (iClass is not exposed to
+      external apps; the built-in Picopass app is the tool)
+  Appends each result to /ext/hf_card_id.txt.
+
+Reader Audit (HF+LF)
+  Menu:
+    Detect reader HF/LF -> hold near a reader; shows HF 13.56 PRESENT and LF 125k
+      PRESENT (with frequency) so you know which band/credential to test.
+    Read card + audit   -> read a valid card, then emulate it to a reader.
+    Audit (default UID) -> emulate a default UID for readers that talk to any card.
+  Classifies what the reader does after selecting the card:
+    UID-ONLY!  = read the UID then halted                        (INSECURE)
+    CRYPTO     = sent RATS / auth (ISO14443-4 / Mifare)          (uses card crypto)
     READS DATA = read data pages (0x30)
-  "Read card + audit" first so the reader recognises a valid UID, or use the
-  default UID for readers that talk to any card. Also finds dual-tech OR-logic.
+    +WR        = the reader WROTE back (0xA0/0xA2) -> anti-passback / counter
+  Saves each audit to /ext/reader_audit.txt.
+  NOTE: to collect mfkey32 nonces from a reader, use Cloner Sniffer "Emul MFC"
+  (writes /ext/nfc/.mfkey32.log) + the MFKey app.
 
 Dual-Tech Scan (LF+HF)
   Hold ONE card, press OK: reads it on LF then HF (full NFC scanner) and flags
-  DUAL-TECH combo cards. If LF is present but no ISO14443/15693 HF answers, it
-  hints "HF may be iCLASS" (iCLASS/Picopass isn't exposed to apps - use Picopass).
+  DUAL-TECH combo cards (OR-logic risk). If LF is present but no ISO14443/15693 HF
+  answers, it hints "iCLASS? HF Card ID/Picopass".
 
 Card Audit (LF+HF)  -- AUTHORIZED USE ONLY
   Confirm the authorization gate, then:
     Audit HF card   -> read + classify + ACTIVELY verify:
-        Mifare Classic: top-10 default-key dictionary per sector; on full match it
+        Mifare Classic: 37-key default-key dictionary per sector; on full match it
                         saves a clone .nfc to /ext/nfc and reports DUMP N/M sectors.
-        DESFire:        GetVersion generation + unauth config (free dir-list /
-                        create-delete / key version) -> BROKEN / WEAK-CFG / SECURE.
+                        Also flags STATIC KEY (same key all sectors = clone-once/
+                        open-all) and FUDAN backdoor silicon (auths with the public
+                        A396EFA4E24F key -> all keys recoverable, eprint 2024/1275).
+        DESFire:        GetVersion generation + unauth config -> BROKEN / WEAK-CFG /
+                        SECURE.
         NTAG/UL:        reads a user page w/o auth as proof (or UNK if protected).
     Audit LF card   -> read = confirmed cloneable.
-    Load .nfc (offline) -> classify a saved dump; for Mifare, checks stored keys
-                        vs the default dictionary.
+    Load .nfc (offline) -> classify a saved dump; checks stored keys vs the dict.
     View reports    -> browse/scroll the timestamped reports on the SD card.
   Reports go to /ext/swissnfcrfid_reports/ and carry an authorization notice.
-  Verifies weakness with REAL data (default-key block read / recovered dump);
-  it does NOT break AES (DESFire EV1+) - that has no public break.
+  Verifies weakness with REAL data; it does NOT break AES (DESFire EV1+).
 
 Blank Validator (LF+HF)
   Non-destructive writeability test: read original -> write test value -> read
-  back to confirm -> restore original.
-    Test LF card -> T5577/EM4305 (writes a test EM4100 ID).
-    Test HF card -> NTAG/UL (user page), Mifare Classic:
-        gen1a backdoor probe -> "HF gen1a" (magic)
-        else block-0 rewrite -> "HF CUID/gen2" (UID-writeable magic)
-        else data-block write -> "HF MF Classic" (writeable memory, not magic)
+  back -> restore. Menu: Auto (LF then HF) / Test LF only / Test HF only.
+    LF -> T5577/EM4305 (writes a test EM4100 ID).
+    HF -> NTAG/UL (user page), Mifare Classic magic identifier:
+        gen1a backdoor probe            -> "HF gen1a"
+        gen2/CUID raw block-0 write      -> "HF CUID/gen2" (also GDM backdoor auth)
+        gen3 90F0 probe                  -> "HF gen3"
+        else data-block write            -> memory writeable, not magic
   NOTE: HF tests MEMORY writeability + magic type; it does not perform a magic
-  UID clone (use the stock NFC app). gen1a probe is best-effort - verify on a
-  known gen1a card.
+  UID clone (use NFC Magic / Clone Writer).
+
+Clone Writer (HF)  -- AUTHORIZED USE ONLY, OVERWRITES the target
+  Load a Mifare Classic dump (Read source card OR From saved .nfc) and write it
+  onto a MAGIC blank (gen2/CUID). Each block is retried across key A / key B / the
+  dump's own keys. Block 0 (UID) writes only on gen2/CUID targets. gen1a UID write
+  is NOT done here (use NFC Magic).
+
+Cloner Sniffer (HF)  -- AUTHORIZED RESEARCH ONLY
+  Card-emulation trap to reverse-engineer a writer/cloner. Modes:
+    Sniff: passive / ACK knocks / Raw (no anticol) -> log every raw frame.
+    Emul MFC (.nfc) -> full Mifare Classic emulation from a saved dump: the cloner
+      completes auth against the Flipper, its writes land in emulated memory (diffed
+      afterward), and every auth nonce is captured to /ext/nfc/.mfkey32.log for MFKey.
+  Not a wire sniffer; it is a trap the writer talks to.
+
+Gen3 Probe (HF)
+  Non-destructive Gen3 (APDU) magic test: rewrites block 0 with its OWN data via
+  90F0CCCC. If accepted, the card is Gen3 and its UID can be set with 90F0/90FB
+  (which no auth-based tool catches). Writes /ext/gen3_probe.txt.
+
+Card Emulator (HF)  -- the one-device wallet
+  Pick a saved .nfc and the Flipper BECOMES that card (full Mifare Classic + keys,
+  ISO14443-A UID, or Ultralight). For cards you can't clone onto a blank, this is
+  the answer: the Flipper replaces the card. Shows a live "reads" counter.
 
 --------------------------------------------------------------------------------
 REBUILD (any app)
@@ -101,19 +155,24 @@ These official/third-party tools fill gaps this toolkit intentionally leaves.
 
   NFC Magic (flipperzero-good-faps/nfc_magic)  -- INSTALL
     Writes MAGIC cards: Gen1A/Gen1B, Gen2 (DirectWrite/CUID/FUID/UFUID),
-    Gen4 GTU (with password). This is the proper tool for UID cloning onto magic
-    blanks. It does NOT support Gen3 (APDU) or Gen4 GDM (see Gen3 Probe below).
+    Gen4 GTU (with password). The proper tool for UID cloning onto magic blanks.
+    Does NOT support Gen3 (APDU) or Gen4 GDM (see Gen3 Probe).
 
-  Gen3 Probe (this toolkit)  -- for the odd keychain
-    Non-destructive test for Gen3 (APDU) magic: rewrites block 0 with its own
-    data via 90F0CCCC. If it accepts, the card is Gen3 and its UID can be set
-    with the 90F0/90FB commands (which no auth-based tool catches).
+  Picopass (built-in / app catalog)  -- for iCLASS/HID 13.56
+    iCLASS/Picopass is NOT in the Flipper's shared NFC library and cannot be read
+    by an external app. The Picopass app carries its own stack: read iClass Legacy,
+    dump PACS, loclass online nonce collection, emulate, write magic iClass.
+    HF Card ID / Dual-Tech Scan point you here when a card is likely iClass.
 
   NFCMiTM (github.com/a66at/NFCMiTM)  -- optional, hardware
     True inline relay MITM: Raspberry Pi + two PN532 readers, logs the full
-    reader<->card conversation (with APDU parser). Best for ISO14443-4 / APDU
-    systems (DESFire, access, payment research). PN532 can't relay Mifare
-    Crypto1 cleanly, so not ideal for Mifare magic.
+    reader<->card conversation (APDU parser). Best for ISO14443-4 / APDU systems
+    (DESFire, access, payment). PN532 can't relay Mifare Crypto1 cleanly.
+
+  Proxmark3 RDV4 (/ Proxmark5, pre-order ~Oct 2026)  -- the heavy lifter
+    Full iClass loclass offline solve, DESFire, deep protocol work. Proxmark5 is
+    crowdfunded with native Flipper Zero integration (USB-C + optional BLE add-on);
+    until it ships, the Flipper field-collects and a PC/Proxmark3 does the solve.
 
 TYPICAL LAB CHAINS
   Unknown MFC with custom keys:
@@ -121,7 +180,13 @@ TYPICAL LAB CHAINS
   Clone a UID onto a magic blank:
     Card Audit (dump source) -> Blank Validator (id the blank type) ->
     NFC Magic (gen1a/2/4-GTU)  OR  Clone Writer (gen2 memory)  OR
-    Gen3 Probe (if the blank/target is Gen3 APDU)
-  Reverse a proprietary cloner/reader:
-    Cloner Sniffer "Emul MFC" (collect nonces -> .mfkey32.log) -> MFKey ;
+    Gen3 Probe (if the target is Gen3 APDU)
+  Be the card (no clone needed):
+    Card Audit (dump) -> Card Emulator (Flipper becomes it)
+  Audit a reader:
+    Reader Audit (detect band + UID-only/crypto/writes-back) ;
+    RFID Stepper "Cn" (HID card# acceptance-oracle) ;
+    Cloner Sniffer "Emul MFC" -> MFKey (recover the reader's key)
+  Reverse a proprietary cloner:
+    Cloner Sniffer "Emul MFC" (nonces -> .mfkey32.log) -> MFKey ;
     or NFCMiTM for APDU-level relay capture.
