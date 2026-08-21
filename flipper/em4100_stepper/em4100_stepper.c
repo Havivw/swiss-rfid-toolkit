@@ -138,10 +138,31 @@ static void u64_to_dec(uint64_t v, char* out, size_t n) {
 
 /* Add/subtract STEP to the data blob as a big-endian integer of data_size
  * bytes, wrapping within that width. Works for any protocol width. */
+
+/* HID H10301 stores 3 decoded bytes [FC, card_hi, card_lo]; the protocol adds
+ * Wiegand parity itself on emulate, so we can sweep the card number directly. */
+static bool is_hid(App* app) {
+    return app->protocol == LFRFIDProtocolH10301;
+}
+
 static void step_id(App* app, int dir) {
     uint32_t step = STEPS[app->step_index];
     int n = (int)app->data_size;
     if(n <= 0 || n > MAX_DATA) return;
+
+    /* HID acceptance-oracle: step the 16-bit card number, holding the facility
+     * code (byte 0). The lfrfid HID protocol recomputes parity on emulate. */
+    if(app->step_pos == -2) {
+        if(is_hid(app) && n >= 3) {
+            uint32_t card = ((uint32_t)app->id[1] << 8) | app->id[2];
+            int32_t v = (int32_t)card + (dir > 0 ? (int32_t)step : -(int32_t)step);
+            v %= 65536;
+            if(v < 0) v += 65536;
+            app->id[1] = (uint8_t)(v >> 8);
+            app->id[2] = (uint8_t)v;
+        }
+        return;
+    }
 
     /* single-byte (truncation-test) mode: change only the selected byte */
     if(app->step_pos >= 0 && app->step_pos < n) {
@@ -247,6 +268,7 @@ static void do_load(App* app) {
         furi_mutex_acquire(app->mutex, FuriWaitForever);
         if(pid != PROTOCOL_NO) {
             app->protocol = (size_t)pid;
+            if(app->protocol == LFRFIDProtocolH10301) app->step_pos = -2;
             app->data_size = protocol_dict_get_data_size(app->dict, app->protocol);
             if(app->data_size > MAX_DATA) app->data_size = MAX_DATA;
             protocol_dict_get_data(app->dict, app->protocol, app->id, app->data_size);
@@ -395,7 +417,9 @@ static void draw_edit(Canvas* c, App* app) {
     snprintf(buf, sizeof(buf), "D%c", app->dir > 0 ? '+' : '-');
     draw_token(c, 70, 36, buf, app->cursor == FieldDir);
 
-    if(app->step_pos < 0)
+    if(app->step_pos == -2)
+        snprintf(buf, sizeof(buf), "Cn"); /* HID card# (hold FC) */
+    else if(app->step_pos < 0)
         snprintf(buf, sizeof(buf), "all");
     else
         snprintf(buf, sizeof(buf), "B%d", app->step_pos);
@@ -550,6 +574,7 @@ int32_t em4100_stepper_app(void* p) {
         if(event.type == EvReadDone) {
             if(app->read_ok) {
                 app->protocol = app->read_protocol;
+                if(app->protocol == LFRFIDProtocolH10301) app->step_pos = -2;
                 app->data_size = app->read_data_size;
                 memcpy(app->id, app->read_id, app->data_size);
                 app->reading = false;
@@ -611,12 +636,13 @@ int32_t em4100_stepper_app(void* p) {
                         step_id(app, +1);
                         if(app->auto_on) a_emu = true;
                         break;
-                    case FieldPos:
-                        if(app->step_pos < (int)app->data_size - 1)
-                            app->step_pos++;
-                        else
-                            app->step_pos = -1;
+                    case FieldPos: {
+                        int lo = is_hid(app) ? -2 : -1;
+                        app->step_pos = (app->step_pos >= (int)app->data_size - 1) ?
+                                            lo :
+                                            app->step_pos + 1;
                         break;
+                    }
                     case FieldStep:
                         if(app->step_index < (int)STEP_COUNT - 1) app->step_index++;
                         break;
@@ -636,12 +662,12 @@ int32_t em4100_stepper_app(void* p) {
                         step_id(app, -1);
                         if(app->auto_on) a_emu = true;
                         break;
-                    case FieldPos:
-                        if(app->step_pos < 0)
-                            app->step_pos = (int)app->data_size - 1;
-                        else
-                            app->step_pos--;
+                    case FieldPos: {
+                        int lo = is_hid(app) ? -2 : -1;
+                        app->step_pos =
+                            (app->step_pos <= lo) ? (int)app->data_size - 1 : app->step_pos - 1;
                         break;
+                    }
                     case FieldStep:
                         if(app->step_index > 0) app->step_index--;
                         break;

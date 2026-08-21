@@ -197,7 +197,7 @@ static void draw_cb(Canvas* c, void* ctx) {
         /* LF present but no ISO14443/15693 HF -> HF is likely iCLASS/Picopass,
          * which this tool can't see (use the stock Picopass app). */
         if(app->lf_found && !app->hf_found)
-            canvas_draw_str(c, 2, 62, "HF may be iCLASS");
+            canvas_draw_str(c, 2, 62, "iCLASS? HF Card ID/Picopass");
         else
             canvas_draw_str(c, 2, 62, "OK rescan  Back menu");
     }

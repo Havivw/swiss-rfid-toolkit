@@ -91,17 +91,49 @@ typedef struct {
  * transit & vendor defaults) — the set attackers try first. */
 static const uint8_t DEFAULT_KEYS[][6] = {
     {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, /* factory default */
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* all-zero */
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* all-zero / blank */
     {0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5}, /* MAD / infrastructure */
     {0xD3, 0xF7, 0xD3, 0xF7, 0xD3, 0xF7}, /* NDEF public */
     {0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5},
-    {0x4D, 0x3A, 0x99, 0xC3, 0x51, 0xDD},
-    {0x1A, 0x98, 0x2C, 0x7E, 0x45, 0x9A},
+    {0x4D, 0x3A, 0x99, 0xC3, 0x51, 0xDD}, /* MAD key A */
+    {0x1A, 0x98, 0x2C, 0x7E, 0x45, 0x9A}, /* MAD key B */
     {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF},
     {0x71, 0x4C, 0x5C, 0x88, 0x6E, 0x97},
     {0x58, 0x7E, 0xE5, 0xF9, 0x35, 0x0F},
+    {0xA0, 0x47, 0x8C, 0xC3, 0x90, 0x91},
+    {0x53, 0x3C, 0xB6, 0xC7, 0x23, 0xF6},
+    {0x8F, 0xD0, 0xA4, 0xF2, 0x56, 0xE9},
+    {0xFC, 0x00, 0x01, 0x87, 0x78, 0xF7},
+    {0x64, 0x71, 0xA5, 0xEF, 0x2D, 0x1A},
+    {0x5C, 0x8F, 0xF9, 0x99, 0x0D, 0xA2},
+    {0xD0, 0x1A, 0xFE, 0xEB, 0x89, 0x0A},
+    {0x75, 0xCC, 0xB5, 0x9C, 0x9B, 0xED},
+    {0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5},
+    {0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5},
+    {0xA1, 0xB1, 0xC1, 0xD1, 0xE1, 0xF1},
+    {0x01, 0x02, 0x03, 0x04, 0x05, 0x06},
+    {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC},
+    {0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+    {0x22, 0x22, 0x22, 0x22, 0x22, 0x22},
+    {0x33, 0x33, 0x33, 0x33, 0x33, 0x33},
+    {0x44, 0x44, 0x44, 0x44, 0x44, 0x44},
+    {0x55, 0x55, 0x55, 0x55, 0x55, 0x55},
+    {0x66, 0x66, 0x66, 0x66, 0x66, 0x66},
+    {0x77, 0x77, 0x77, 0x77, 0x77, 0x77},
+    {0x88, 0x88, 0x88, 0x88, 0x88, 0x88},
+    {0x99, 0x99, 0x99, 0x99, 0x99, 0x99},
+    {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA},
+    {0xBB, 0xBB, 0xBB, 0xBB, 0xBB, 0xBB},
+    {0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC},
+    {0xDD, 0xDD, 0xDD, 0xDD, 0xDD, 0xDD},
+    {0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE},
 };
 #define N_DEFAULT_KEYS ((int)(sizeof(DEFAULT_KEYS) / sizeof(DEFAULT_KEYS[0])))
+
+/* Fudan/clone backdoor key (Quarkslab 2024, eprint 2024/1275): FM11RF08S and
+ * kin authenticate under this single production-wide key, recovering every key
+ * even when fully diversified. If block 0 auths with it -> backdoored silicon. */
+static const uint8_t FUDAN_BACKDOOR[6] = {0xA3, 0x96, 0xEF, 0xA4, 0xE2, 0x4F};
 
 /* ---- DESFire GetVersion (reused pattern) ---- */
 typedef struct {
@@ -281,11 +313,47 @@ static void audit_hf(App* app) {
             }
         }
 
+        /* static-key check: same Key A across all recovered sectors means the
+         * whole install shares one key -> clone-once / open-all (Critical). */
+        bool static_key = false;
+        {
+            int found = 0;
+            bool same = true, have_ref = false;
+            MfClassicKey ref;
+            for(uint8_t s = 0; s < sectors; s++) {
+                if(keys.key_a_mask & (1ULL << s)) {
+                    found++;
+                    if(!have_ref) {
+                        ref = keys.key_a[s];
+                        have_ref = true;
+                    } else if(memcmp(keys.key_a[s].data, ref.data, 6) != 0) {
+                        same = false;
+                    }
+                }
+            }
+            static_key = (found >= 2 && same);
+        }
+
+        /* Fudan backdoor probe: a normal card would never key on A396EFA4E24F,
+         * so a successful auth is a strong "backdoored clone silicon" signal. */
+        bool fudan = false;
+        {
+            MfClassicKey bk;
+            memcpy(bk.data, FUDAN_BACKDOOR, 6);
+            MfClassicAuthContext ctx;
+            if(mf_classic_poller_sync_auth(app->nfc, 0, &bk, MfClassicKeyTypeA, &ctx) ==
+                   MfClassicErrorNone ||
+               mf_classic_poller_sync_auth(app->nfc, 0, &bk, MfClassicKeyTypeB, &ctx) ==
+                   MfClassicErrorNone)
+                fudan = true;
+        }
+
         if(sec0_key >= 0) {
             snprintf(
                 detail,
                 sizeof(detail),
-                "DEFAULT KEY %c %02X%02X%02X%02X%02X%02X",
+                "%sKEY %c %02X%02X%02X%02X%02X%02X",
+                static_key ? "STATIC " : "DEFAULT ",
                 sec0_ktype ? 'B' : 'A',
                 DEFAULT_KEYS[sec0_key][0],
                 DEFAULT_KEYS[sec0_key][1],
@@ -324,7 +392,11 @@ static void audit_hf(App* app) {
 
             if(sec_read >= sectors && clonefile[0]) {
                 snprintf(proof_line, sizeof(proof_line), "DUMP %u/%u -> %s", sec_read, sectors, clonefile);
-                snprintf(extra, sizeof(extra), "CONFIRMED: full card dumped w/ default keys; clone in /ext/nfc.");
+                snprintf(
+                    extra,
+                    sizeof(extra),
+                    "%sfull card dumped; clone in /ext/nfc.",
+                    static_key ? "STATIC KEY (clone-once/open-all)! " : "CONFIRMED: ");
             } else if(sec_read > 0) {
                 snprintf(proof_line, sizeof(proof_line), "DUMP %u/%u sectors (default keys)", sec_read, sectors);
                 snprintf(extra, sizeof(extra), "Partial %u/%u; rest need nested attack (stock NFC app).", sec_read, sectors);
@@ -335,6 +407,14 @@ static void audit_hf(App* app) {
         } else {
             snprintf(detail, sizeof(detail), "no default key (Crypto1 still broken)");
             snprintf(extra, sizeof(extra), "Crypto1 broken via nested/hardnested (keys not default).");
+        }
+
+        if(fudan) {
+            snprintf(detail, sizeof(detail), "FUDAN backdoor A396EFA4E24F");
+            snprintf(
+                extra,
+                sizeof(extra),
+                "BACKDOORED clone silicon: all keys recoverable (eprint 2024/1275).");
         }
     } else if(sak & 0x20) {
         DesfireProbe pr;
