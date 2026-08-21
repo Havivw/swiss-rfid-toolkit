@@ -4,12 +4,6 @@ A companion toolkit of **Flipper Zero** apps for authorized RFID/NFC security wo
 reading, stepping, auditing, blank-validation, cloning, and card emulation, built to
 go beyond what the stock NFC/LFRFID apps do.
 
-<p align="center">
-  <img src="docs/screenshots/card_audit.png" width="270" alt="Card Audit — BROKEN verdict, 16/16 dump">
-  <img src="docs/screenshots/blank_validator.png" width="270" alt="Blank Validator — magic identifier">
-  <img src="docs/screenshots/card_emulator.png" width="270" alt="Card Emulator — Flipper becomes the card">
-</p>
-
 Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 [`ufbt`](https://pypi.org/project/ufbt/). Rebuild from source for other firmware.
 
@@ -34,33 +28,6 @@ Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 | **Cloner Sniffer** | HF | Card-emulation trap: emulate a card and log every frame a writer/cloner sends (passive / ACK-knocks / raw / full-MFC), capturing auth nonces for MFKey. |
 | **Gen3 Probe** | HF | Non-destructive Gen3 (APDU) test — rewrites block 0 with its own data via `90F0CCCC`. |
 | **Card Emulator** | HF | The Flipper *becomes* any saved card (full Mifare Classic + keys, UID, or Ultralight). Emulate instead of clone. |
-
-## Screens
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/rfid_stepper.png" width="330"><br><sub><b>RFID Stepper</b> — step & sweep an EM4100 ID</sub></td>
-    <td align="center"><img src="docs/screenshots/nfc_uid_stepper.png" width="330"><br><sub><b>NFC UID Stepper</b> — ISO14443-A UID + verdict</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/card_audit.png" width="330"><br><sub><b>Card Audit</b> — default-key dump, clone saved</sub></td>
-    <td align="center"><img src="docs/screenshots/reader_audit.png" width="330"><br><sub><b>Reader Audit</b> — UID-only vs crypto reader</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/blank_validator.png" width="330"><br><sub><b>Blank Validator</b> — auto LF+HF, magic ID</sub></td>
-    <td align="center"><img src="docs/screenshots/dualtech_scan.png" width="330"><br><sub><b>Dual-Tech Scan</b> — LF+HF combo detection</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/clone_writer.png" width="330"><br><sub><b>Clone Writer</b> — dump → magic blank</sub></td>
-    <td align="center"><img src="docs/screenshots/card_emulator.png" width="330"><br><sub><b>Card Emulator</b> — become any saved card</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/cloner_sniffer.png" width="330"><br><sub><b>Cloner Sniffer</b> — log a writer's frames + nonces</sub></td>
-    <td align="center"><img src="docs/screenshots/gen3_probe.png" width="330"><br><sub><b>Gen3 Probe</b> — non-destructive Gen3 APDU test</sub></td>
-  </tr>
-</table>
-
-<sub>Screens are faithful 128×64 mockups rendered from each app's actual draw code.</sub>
 
 ## Install (no build)
 
