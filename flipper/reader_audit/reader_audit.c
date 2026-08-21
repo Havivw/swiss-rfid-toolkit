@@ -190,12 +190,21 @@ static void do_read(App* app) {
  * NFC (13.56) and RFID (125k) carrier-detect hardware until Back. */
 static void do_detect(App* app) {
     emu_stop(app);
-    furi_hal_nfc_field_detect_start();
+
+    /* HF: the NFC HAL must be acquired and brought out of low-power before its
+     * carrier-detect will report an external reader field. */
+    bool hf_ok = (furi_hal_nfc_acquire() == FuriHalNfcErrorNone);
+    if(hf_ok) {
+        furi_hal_nfc_low_power_mode_stop();
+        furi_hal_nfc_field_detect_start();
+    }
+    /* LF: the 125 kHz subsystem must be initialised before field detection. */
+    furi_hal_rfid_init();
     furi_hal_rfid_field_detect_start();
 
     bool run = true;
     while(run) {
-        bool hf = furi_hal_nfc_field_is_present();
+        bool hf = hf_ok && furi_hal_nfc_field_is_present();
         uint32_t freq = 0;
         bool lf = furi_hal_rfid_field_is_present(&freq);
 
@@ -207,15 +216,21 @@ static void do_detect(App* app) {
         view_port_update(app->view_port);
 
         AppEvent ev;
-        if(furi_message_queue_get(app->event_queue, &ev, 150) == FuriStatusOk) {
+        if(furi_message_queue_get(app->event_queue, &ev, 120) == FuriStatusOk) {
             if(ev.type == EvInput && ev.input.type == InputTypeShort &&
                ev.input.key == InputKeyBack)
                 run = false;
         }
     }
 
+    /* teardown, restoring low-power/idle so the audit path works afterwards */
     furi_hal_rfid_field_detect_stop();
-    furi_hal_nfc_field_detect_stop();
+    furi_hal_rfid_pins_reset();
+    if(hf_ok) {
+        furi_hal_nfc_field_detect_stop();
+        furi_hal_nfc_low_power_mode_start();
+        furi_hal_nfc_release();
+    }
 
     furi_mutex_acquire(app->mutex, FuriWaitForever);
     app->scene = SceneMenu;
