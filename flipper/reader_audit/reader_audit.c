@@ -17,8 +17,6 @@
  * RF wire — use the Stepper apps' per-byte sweep + watch the door for that.
  */
 #include <furi.h>
-#include <furi_hal_nfc.h>
-#include <furi_hal_rfid.h>
 #include <gui/gui.h>
 #include <input/input.h>
 #include <storage/storage.h>
@@ -32,7 +30,6 @@
 
 typedef enum {
     SceneMenu,
-    SceneDetect, /* HF/LF reader-field detector */
     SceneRead,
     SceneAudit,
 } Scene;
@@ -72,11 +69,6 @@ typedef struct {
     bool saw_halt;
     uint8_t last_cmd[8];
     uint8_t last_cmd_len;
-
-    /* HF/LF field detector */
-    bool det_hf;
-    bool det_lf;
-    uint32_t det_lf_freq;
 
     char message[32];
 } App;
@@ -186,48 +178,6 @@ static void do_read(App* app) {
     iso14443_3a_free(d);
 }
 
-/* HF/LF reader-field detector — tells you which band a reader uses. Polls the
- * NFC (13.56) and RFID (125k) carrier-detect hardware until Back. */
-static void do_detect(App* app) {
-    emu_stop(app);
-    bool hf_ok = (furi_hal_nfc_acquire() == FuriHalNfcErrorNone);
-    if(hf_ok) furi_hal_nfc_low_power_mode_stop();
-    furi_hal_nfc_field_detect_start();
-    furi_hal_rfid_field_detect_start();
-
-    bool run = true;
-    while(run) {
-        bool hf = furi_hal_nfc_field_is_present();
-        uint32_t freq = 0;
-        bool lf = furi_hal_rfid_field_is_present(&freq);
-
-        furi_mutex_acquire(app->mutex, FuriWaitForever);
-        app->det_hf = hf;
-        app->det_lf = lf;
-        app->det_lf_freq = freq;
-        furi_mutex_release(app->mutex);
-        view_port_update(app->view_port);
-
-        AppEvent ev;
-        if(furi_message_queue_get(app->event_queue, &ev, 120) == FuriStatusOk) {
-            if(ev.type == EvInput && ev.input.type == InputTypeShort &&
-               ev.input.key == InputKeyBack)
-                run = false;
-        }
-    }
-
-    furi_hal_rfid_field_detect_stop();
-    furi_hal_nfc_field_detect_stop();
-    if(hf_ok) {
-        furi_hal_nfc_low_power_mode_start();
-        furi_hal_nfc_release();
-    }
-
-    furi_mutex_acquire(app->mutex, FuriWaitForever);
-    app->scene = SceneMenu;
-    furi_mutex_release(app->mutex);
-}
-
 /* Append the current audit result to /ext/reader_audit.txt for the report. */
 static void save_report(App* app) {
     const char* verdict;
@@ -267,10 +217,7 @@ static void save_report(App* app) {
 
 /* -------------------------- GUI -------------------------- */
 
-static const char* const kMenu[] = {
-    "Detect reader HF/LF",
-    "Read card + audit",
-    "Audit (default UID)"};
+static const char* const kMenu[] = {"Read card + audit", "Audit (default UID)"};
 #define MENU_COUNT ((int)(sizeof(kMenu) / sizeof(kMenu[0])))
 
 static void draw_menu(Canvas* c, App* app) {
@@ -294,26 +241,6 @@ static void draw_menu(Canvas* c, App* app) {
         canvas_draw_str(c, 2, 62, "OK select   Back exit");
 }
 
-static void draw_detect(Canvas* c, App* app) {
-    canvas_set_font(c, FontPrimary);
-    canvas_draw_str(c, 2, 12, "Detect Reader");
-    canvas_set_font(c, FontSecondary);
-    canvas_draw_str(c, 2, 26, "Hold near a reader.");
-
-    char buf[32];
-    /* HF */
-    canvas_draw_str(c, 2, 40, "HF 13.56:");
-    canvas_draw_str(c, 66, 40, app->det_hf ? "PRESENT" : "-");
-    /* LF */
-    if(app->det_lf && app->det_lf_freq)
-        snprintf(buf, sizeof(buf), "%lu kHz", (unsigned long)(app->det_lf_freq / 1000));
-    else
-        snprintf(buf, sizeof(buf), "%s", app->det_lf ? "PRESENT" : "-");
-    canvas_draw_str(c, 2, 51, "LF 125k:");
-    canvas_draw_str(c, 66, 51, buf);
-
-    canvas_draw_str(c, 2, 63, "Back: menu");
-}
 
 static void draw_read(Canvas* c) {
     canvas_set_font(c, FontPrimary);
@@ -388,9 +315,6 @@ static void draw_cb(Canvas* c, void* ctx) {
     case SceneMenu:
         draw_menu(c, app);
         break;
-    case SceneDetect:
-        draw_detect(c, app);
-        break;
     case SceneRead:
         draw_read(c);
         break;
@@ -457,7 +381,7 @@ int32_t reader_audit_app(void* p) {
         if(furi_message_queue_get(app->event_queue, &event, FuriWaitForever) != FuriStatusOk)
             continue;
 
-        bool a_read = false, a_emu = false, a_stop = false, a_detect = false;
+        bool a_read = false, a_emu = false, a_stop = false;
 
         furi_mutex_acquire(app->mutex, FuriWaitForever);
         if(event.type == EvReaderActivity) {
@@ -472,10 +396,7 @@ int32_t reader_audit_app(void* p) {
                     app->menu_index = (app->menu_index + 1) % MENU_COUNT;
                 } else if(press && in->key == InputKeyOk) {
                     app->message[0] = '\0';
-                    if(app->menu_index == 0) { /* detect HF/LF */
-                        app->scene = SceneDetect;
-                        a_detect = true;
-                    } else if(app->menu_index == 1) { /* read + audit */
+                    if(app->menu_index == 0) { /* read + audit */
                         app->scene = SceneRead;
                         a_read = true;
                     } else { /* audit default UID */
@@ -500,7 +421,6 @@ int32_t reader_audit_app(void* p) {
             save_report(app); /* persist the audit result before leaving */
             emu_stop(app);
         }
-        if(a_detect) do_detect(app); /* blocking until Back */
         if(a_read) do_read(app); /* blocking; may set scene to Audit */
         /* if the read succeeded we are now in Audit — start emulating */
         furi_mutex_acquire(app->mutex, FuriWaitForever);

@@ -21,7 +21,7 @@ Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 | **RFID Stepper** | LF 125 kHz | Read an EM4100 ID, step it up/down, emulate / auto-sweep; pause + quick-save; per-byte truncation test; Wiegand/HID decode. **HID-aware `Cn` mode**: sweep an H10301 card number holding the facility code (parity recomputed) = reader acceptance-oracle. |
 | **NFC UID Stepper** | HF 13.56 | Same stepping/emulation for ISO14443-A UID; verdict via ATQA/SAK + DESFire GetVersion. |
 | **HF Card ID** | HF | One-tap identify: names the card technology (ISO14443-A/B, ISO15693/SLIX, FeliCa, Mifare, DESFire, EMV) + security verdict + which tool applies; flags likely iCLASS/Picopass for the Picopass app. |
-| **Reader Audit** | HF/LF | **Detect an HF/LF reader field** (which band + LF frequency), then emulate a card and classify the reader: **UID-only** vs **crypto** (RATS/auth), and flag **writes-back** (anti-passback/counter). Saves a report. |
+| **Reader Audit** | HF | Emulate a card to a reader and classify it: **UID-only** vs **crypto** (RATS/auth), and flag **writes-back** (anti-passback/counter). Saves a report. |
 | **Dual-Tech Scan** | LF+HF | Detect combo cards; flag OR-logic; point iCLASS cases to HF Card ID / Picopass. |
 | **Card Audit** | LF+HF | Authorization-gated read → classify → **actively verify** (Mifare Classic 37-key dictionary dump + save clone; **static-key** + **Fudan-backdoor** flags; DESFire generation + config; NTAG page) → SD report + viewer; load `.nfc` offline. |
 | **Blank Validator** | LF+HF | Non-destructive writeability test + **magic identifier**: gen1a / CUID-gen2 / **gen3** / GDM / proprietary / normal. Auto LF-then-HF scan. |

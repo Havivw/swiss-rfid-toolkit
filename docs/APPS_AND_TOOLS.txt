@@ -7,7 +7,7 @@ firmware (API 87.1). Rebuild from the source/ folders for other firmware.
   em4100_stepper/    "RFID Stepper"     LF 125kHz  read/step/emulate/sweep; HID card# sweep
   nfc_uid_stepper/   "NFC UID Stepper"  HF 13.56   UID read/step/emulate/sweep + verdict
   nfc_id/            "HF Card ID"       HF         identify HF tech + security verdict
-  reader_audit/      "Reader Audit"     HF+LF      detect HF/LF reader; UID-only vs crypto
+  reader_audit/      "Reader Audit"     HF         UID-only vs crypto; writes-back; report
   dualtech_scan/     "Dual-Tech Scan"   LF+HF      detect combo cards (+ iCLASS hint)
   card_audit/        "Card Audit"       LF+HF      AUTHORIZED: read/verify/report to SD
   blank_validator/   "Blank Validator"  LF+HF      is this blank writeable? which magic type?
@@ -57,12 +57,8 @@ HF Card ID (HF)  -- NEW
       external apps; the built-in Picopass app is the tool)
   Appends each result to /ext/hf_card_id.txt.
 
-Reader Audit (HF+LF)
-  Menu:
-    Detect reader HF/LF -> hold near a reader; shows HF 13.56 PRESENT and LF 125k
-      PRESENT (with frequency) so you know which band/credential to test.
-    Read card + audit   -> read a valid card, then emulate it to a reader.
-    Audit (default UID) -> emulate a default UID for readers that talk to any card.
+Reader Audit (HF)
+  Menu: Read card + audit (read a valid card, then emulate it) / Audit (default UID).
   Classifies what the reader does after selecting the card:
     UID-ONLY!  = read the UID then halted                        (INSECURE)
     CRYPTO     = sent RATS / auth (ISO14443-4 / Mifare)          (uses card crypto)
