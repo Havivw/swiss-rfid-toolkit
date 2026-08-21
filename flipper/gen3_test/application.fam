@@ -1,0 +1,10 @@
+App(
+    appid="gen3_test",
+    name="Gen3 Probe",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="gen3_test_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Non-destructive Gen3 (APDU) magic probe: rewrites block 0 with its own data via the 90F0CCCC command and reports if the card accepts it.",
+    fap_version="1.0",
+)

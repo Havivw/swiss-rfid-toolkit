@@ -1,0 +1,18 @@
+# ufbt SDK + venv (huge, regenerable via `ufbt update`)
+.ufbt/
+.ufbt-venv/
+# per-app build outputs
+flipper/*/dist/
+flipper/*/.vscode/
+flipper/*/build/
+# archives / binaries (regenerated from source)
+*.zip
+*.bin
+*.elf
+*.map
+# scratch / OS
+.DS_Store
+scratchpad/
+
+# PlatformIO build cache anywhere
+**/.pio/

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can I clone this card? — RFID/NFC field reference</title>
+</head>
+<body>
+<title>Can I clone this card? — RFID/NFC field reference</title>
+<style>
+  :root {
+    /* cool graphite neutrals + burnt-amber accent (Flipper-grounded), used only on structure */
+    --bg: #eceae4;
+    --surface: #f7f6f2;
+    --surface-2: #f0eee8;
+    --ink: #1c1e22;
+    --ink-soft: #4a4e57;
+    --ink-faint: #767b85;
+    --line: #d4d1c8;
+    --line-soft: #e2dfd7;
+    --accent: #b25e17;
+    --accent-soft: #c98a4a;
+
+    --crit: #b0333c;   --crit-bg: #f2dcdd;
+    --high: #b5611b;   --high-bg: #f3e3d2;
+    --med:  #927611;   --med-bg:  #efe9cf;
+    --low:  #3d7f5a;   --low-bg:  #dcebe0;
+
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1014;
+      --surface: #171a20;
+      --surface-2: #1d212a;
+      --ink: #e8e9ec;
+      --ink-soft: #a9afbb;
+      --ink-faint: #6f7684;
+      --line: #2a2f3a;
+      --line-soft: #21252e;
+      --accent: #e8963c;
+      --accent-soft: #c67f36;
+
+      --crit: #e56b73; --crit-bg: #341c1f;
+      --high: #e3944a; --high-bg: #33251492;
+      --med:  #d8bf55; --med-bg:  #2f2a15;
+      --low:  #6bc094; --low-bg:  #16281e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1014;
+    --surface: #171a20;
+    --surface-2: #1d212a;
+    --ink: #e8e9ec;
+    --ink-soft: #a9afbb;
+    --ink-faint: #6f7684;
+    --line: #2a2f3a;
+    --line-soft: #21252e;
+    --accent: #e8963c;
+    --accent-soft: #c67f36;
+    --crit: #e56b73; --crit-bg: #341c1f;
+    --high: #e3944a; --high-bg: #332514;
+    --med:  #d8bf55; --med-bg:  #2f2a15;
+    --low:  #6bc094; --low-bg:  #16281e;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 80px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 0 18px;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--accent); display: inline-block; }
+
+  h1 {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+  .lede { max-width: 66ch; color: var(--ink-soft); font-size: clamp(15px, 1.6vw, 17px); margin: 0 0 22px; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 12px; background: var(--surface);
+  }
+  .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+  section { margin-top: 52px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; border-top: 2px solid var(--accent); padding-top: 14px; }
+  .sec-num { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 600; }
+  h2 { font-family: var(--mono); font-weight: 600; font-size: clamp(19px, 2.6vw, 24px); margin: 0; letter-spacing: -0.01em; }
+  .sec-sub { color: var(--ink-soft); max-width: 70ch; margin: 8px 0 22px; }
+
+  .rule {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 0 0 26px;
+    font-size: 15.5px;
+    color: var(--ink);
+  }
+  .rule b { color: var(--accent); }
+
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 640px; }
+  thead th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-faint); text-align: left; font-weight: 600;
+    padding: 13px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2);
+    white-space: nowrap;
+  }
+  tbody td { padding: 13px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--ink-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface-2); }
+  td.k { color: var(--ink); font-weight: 600; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-faint); width: 34px; }
+  td.mono { font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 5px; white-space: nowrap; border: 1px solid transparent;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 2px; }
+  .yes { color: var(--low);  background: var(--low-bg);  border-color: color-mix(in srgb, var(--low) 30%, transparent); }
+  .yes::before { background: var(--low); }
+  .eff { color: var(--med);  background: var(--med-bg);  border-color: color-mix(in srgb, var(--med) 30%, transparent); }
+  .eff::before { background: var(--med); }
+  .no  { color: var(--crit); background: var(--crit-bg); border-color: color-mix(in srgb, var(--crit) 30%, transparent); }
+  .no::before { background: var(--crit); }
+
+  .sev { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .sev::before { content: ""; width: 9px; height: 9px; border-radius: 2px; }
+  .s-crit { color: var(--crit); } .s-crit::before { background: var(--crit); }
+  .s-high { color: var(--high); } .s-high::before { background: var(--high); }
+  .s-med  { color: var(--med);  } .s-med::before  { background: var(--med); }
+  .s-low  { color: var(--low);  } .s-low::before  { background: var(--low); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 20px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  .legend .sev { font-size: 11.5px; }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12.5px; font-family: var(--mono); }
+  footer b { color: var(--ink-soft); font-weight: 600; }
+  a { color: var(--accent); }
+  @media (max-width: 560px) { body { font-size: 14.5px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">RFID / NFC · Bench field reference</p>
+    <h1>Can I clone this card?</h1>
+    <p class="lede">A working model for RFID/NFC clone-ability, and every weakness surfaced during the SwissNFC/RFID Flipper toolkit bench work. The whole field reduces to one question — <b>does the card keep a secret it never reveals?</b></p>
+    <span class="badge">Authorized testing only — cards &amp; readers you own or may test</span>
+  </header>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>The dd model</h2></div>
+    <p class="sec-sub">On a computer, <code>dd</code> clones a disk because the disk is passive storage — the secret lives in copyable software, not the medium. RFID splits along exactly that line.</p>
+
+    <div class="rule">
+      <b>The rule.</b> A raw dump-and-write (RFID's <code>dd</code>) works when the medium is <b>storage</b> and the secret is <b>copyable</b>. It fails the moment the key lives in unreadable silicon and the card proves knowledge by <b>computing</b> a challenge-response — the RF equivalent of a TPM-bound disk.
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>Card / tech</th><th>dd-able?</th><th>Why — storage vs. secret</th><th>UID (block 0)</th><th>Toolkit path</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="k">EM4100 125&nbsp;kHz (LF)</td>
+            <td><span class="chip yes">Fully</span></td>
+            <td>Pure static ID — no secret, no compute</td>
+            <td class="mono">is the data</td>
+            <td>RFID Stepper → write T5577</td>
+          </tr>
+          <tr>
+            <td class="k">Ultralight / NTAG (HF)</td>
+            <td><span class="chip yes">Mostly</span></td>
+            <td>User pages are unauthenticated storage</td>
+            <td class="mono">often locked</td>
+            <td>Blank Validator / Card Audit</td>
+          </tr>
+          <tr>
+            <td class="k">Mifare Classic (HF)</td>
+            <td><span class="chip eff">With keys</span></td>
+            <td>Key sits <b>on the card</b>; Crypto1 broken → keys recoverable</td>
+            <td class="mono">locked → magic</td>
+            <td>Card Audit + MFKey</td>
+          </tr>
+          <tr>
+            <td class="k">Magic Classic (gen1a/2/3/4)</td>
+            <td><span class="chip yes">Incl. UID</span></td>
+            <td>Backdoor unlocks the read-only UID region</td>
+            <td class="mono">writeable</td>
+            <td>NFC Magic / Clone Writer</td>
+          </tr>
+          <tr>
+            <td class="k">Proprietary magic keychain</td>
+            <td><span class="chip eff">Its cloner only</span></td>
+            <td>Magic, but the unlock command is proprietary</td>
+            <td class="mono">vendor-only</td>
+            <td>Emulate instead (Card Emulator)</td>
+          </tr>
+          <tr>
+            <td class="k">DESFire / EMV / secure element</td>
+            <td><span class="chip no">Never</span></td>
+            <td>Key in <b>unreadable</b> silicon; card computes the response — no copyable ciphertext</td>
+            <td class="mono">n/a</td>
+            <td>Card Audit — config audit only</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Weaknesses found on the bench</h2></div>
+    <p class="sec-sub">Every issue the toolkit surfaced against real cards and readers, ranked by real-world exposure.</p>
+
+    <div class="legend">
+      <span class="sev s-crit">Critical — walk-in, no effort</span>
+      <span class="sev s-high">High — effort or a reader needed</span>
+      <span class="sev s-med">Medium — situational</span>
+      <span class="sev s-low">Low — exposure / info</span>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th class="num">#</th><th>Weakness</th><th>Affected tech</th><th>Impact</th><th>Found by</th><th>Severity</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">1</td><td class="k">Static ID, no auth</td><td>EM4100 LF</td><td>Instant clone, no keys</td><td>RFID Stepper</td><td><span class="sev s-crit">Critical</span></td></tr>
+          <tr><td class="num">2</td><td class="k">Default keys</td><td>Mifare Classic</td><td>Opens with public top-10 keys</td><td>Card Audit — dictionary</td><td><span class="sev s-crit">Critical</span></td></tr>
+          <tr><td class="num">3</td><td class="k">UID-only readers</td><td>any HF</td><td>Authorizes on UID alone → spoof by emulation</td><td>Reader Audit</td><td><span class="sev s-crit">Critical</span></td></tr>
+          <tr><td class="num">4</td><td class="k">Crypto1 broken</td><td>Mifare Classic</td><td>Full dump + clone feasible</td><td>Card Audit — verdict</td><td><span class="sev s-high">High</span></td></tr>
+          <tr><td class="num">5</td><td class="k">Non-default keys recoverable</td><td>Mifare Classic</td><td>mfkey32 / nested cracks keys from a reader</td><td>MFKey + Detect Reader</td><td><span class="sev s-high">High</span></td></tr>
+          <tr><td class="num">6</td><td class="k">UID-rewriteable magic</td><td>gen1a / gen2 / gen3 / GDM</td><td>Full clone including serial number</td><td>Blank Validator — magic ID</td><td><span class="sev s-high">High</span></td></tr>
+          <tr><td class="num">7</td><td class="k">Wiegand / HID structure</td><td>HID prox 26-bit</td><td>Facility + card no. decodable → forgeable</td><td>Stepper — HID decode</td><td><span class="sev s-high">High</span></td></tr>
+          <tr><td class="num">8</td><td class="k">Unauthenticated pages</td><td>Ultralight / NTAG</td><td>User data read/write without auth</td><td>Blank Validator / Card Audit</td><td><span class="sev s-med">Medium</span></td></tr>
+          <tr><td class="num">9</td><td class="k">Dual-tech OR-logic</td><td>LF+HF combo cards</td><td>Either technology alone grants access</td><td>Dual-Tech Scan</td><td><span class="sev s-med">Medium</span></td></tr>
+          <tr><td class="num">10</td><td class="k">ID truncation</td><td>weak readers</td><td>Low bytes ignored → smaller keyspace</td><td>Stepper — per-byte sweep</td><td><span class="sev s-med">Medium</span></td></tr>
+          <tr><td class="num">11</td><td class="k">Original DESFire = 3DES</td><td>DESFire hw&nbsp;0x00</td><td>Legacy generation is weak</td><td>Card Audit — GetVersion</td><td><span class="sev s-med">Medium</span></td></tr>
+          <tr><td class="num">12</td><td class="k">Reader write-back needs key</td><td>access systems</td><td>Emulation denied if write-sector key missing</td><td>Card Emulator (reader test)</td><td><span class="sev s-med">Medium</span></td></tr>
+          <tr><td class="num">13</td><td class="k">DESFire config exposure</td><td>DESFire</td><td>Unauth reads leak settings / free-mem / key-version</td><td>Card Audit — config audit</td><td><span class="sev s-low">Low</span></td></tr>
+          <tr><td class="num">14</td><td class="k">Writeable blanks unlabeled</td><td>T5577 / CUID / magic</td><td>Blank type &amp; writeability fingerprinted for cloning</td><td>Blank Validator</td><td><span class="sev s-low">Low</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <b>SwissNFC/RFID toolkit</b> · Flipper Zero (Momentum, API 87.1) · 10 apps · findings verified on hardware, Aug 2026.<br>
+    For authorized security engagements only — test only what you own or are permitted to assess.
+  </footer>
+</div>
+</body>
+</html>

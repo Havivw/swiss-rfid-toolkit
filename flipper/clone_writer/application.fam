@@ -1,0 +1,10 @@
+App(
+    appid="clone_writer",
+    name="Clone Writer",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="clone_writer_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Write a saved Mifare Classic .nfc dump onto a magic (gen2/CUID) blank card. Authorized cloning only.",
+    fap_version="1.0",
+)

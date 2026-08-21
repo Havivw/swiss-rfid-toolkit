@@ -1,0 +1,10 @@
+App(
+    appid="dualtech_scan",
+    name="Dual-Tech Scan",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="dualtech_scan_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Scan a card on both 125kHz LF and 13.56MHz HF and flag combo (dual-tech) cards used in weak OR-logic access systems.",
+    fap_version="1.0",
+)

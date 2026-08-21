@@ -1,0 +1,10 @@
+App(
+    appid="nfc_uid_stepper",
+    name="NFC UID Stepper",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="nfc_uid_stepper_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Read/seed an ISO14443-A UID (4/7 byte), step it up/down, emulate or auto-sweep to a reader.",
+    fap_version="1.0",
+)

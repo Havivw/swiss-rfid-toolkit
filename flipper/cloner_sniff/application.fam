@@ -1,0 +1,10 @@
+App(
+    appid="cloner_sniff",
+    name="Cloner Sniffer",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="cloner_sniff_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Emulate a card and log every raw frame a writer/cloner sends to it, to reverse-engineer proprietary magic-card write commands. Authorized research use only.",
+    fap_version="1.0",
+)

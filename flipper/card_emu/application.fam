@@ -1,0 +1,10 @@
+App(
+    appid="card_emu",
+    name="Card Emulator",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="card_emu_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Wallet emulator: pick a saved .nfc and the Flipper BECOMES that card (full Mifare Classic data, UID, or Ultralight). One device replaces your cards. Authorized use only.",
+    fap_version="1.0",
+)

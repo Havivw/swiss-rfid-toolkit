@@ -1,0 +1,10 @@
+App(
+    appid="em4100_stepper",
+    name="RFID Stepper",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="em4100_stepper_app",
+    stack_size=4 * 1024,
+    fap_category="RFID",
+    fap_description="Read an LF RFID card (EM4100 & more), step the ID up/down, emulate or auto-sweep. Load/save .rfid files.",
+    fap_version="1.0",
+)

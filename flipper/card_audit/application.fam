@@ -1,0 +1,10 @@
+App(
+    appid="card_audit",
+    name="Card Audit",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="card_audit_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Authorized defensive audit: read a card, classify it, actively verify the weakness (default keys / GetVersion / read), and write a report to SD. Authorized use only.",
+    fap_version="1.0",
+)

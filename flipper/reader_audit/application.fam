@@ -1,0 +1,10 @@
+App(
+    appid="reader_audit",
+    name="Reader Audit",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="reader_audit_app",
+    stack_size=4 * 1024,
+    fap_category="NFC",
+    fap_description="Emulate a card to a reader and classify whether it accepts on UID alone or performs crypto (RATS/auth). Spots UID-only misconfigurations.",
+    fap_version="1.0",
+)
