@@ -18,11 +18,12 @@ Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 
 | App | Band | What it does |
 |-----|------|--------------|
-| **RFID Stepper** | LF 125 kHz | Read an EM4100 ID, step it up/down, emulate / auto-sweep; pause + quick-save; per-byte truncation test; Wiegand/HID decode; verdict + skull. |
+| **RFID Stepper** | LF 125 kHz | Read an EM4100 ID, step it up/down, emulate / auto-sweep; pause + quick-save; per-byte truncation test; Wiegand/HID decode. **HID-aware `Cn` mode**: sweep an H10301 card number holding the facility code (parity recomputed) = reader acceptance-oracle. |
 | **NFC UID Stepper** | HF 13.56 | Same stepping/emulation for ISO14443-A UID; verdict via ATQA/SAK + DESFire GetVersion. |
-| **Reader Audit** | HF | Emulate a card to a reader and classify it: **UID-only** (insecure) vs **crypto** (RATS/auth). |
-| **Dual-Tech Scan** | LF+HF | Detect combo cards; flag OR-logic; hint iCLASS when LF present but no ISO HF. |
-| **Card Audit** | LF+HF | Authorization-gated read → classify → **actively verify** (Mifare Classic default-key dump + save clone; DESFire generation + config; NTAG page) → SD report + viewer; load `.nfc` offline. |
+| **HF Card ID** | HF | One-tap identify: names the card technology (ISO14443-A/B, ISO15693/SLIX, FeliCa, Mifare, DESFire, EMV) + security verdict + which tool applies; flags likely iCLASS/Picopass for the Picopass app. |
+| **Reader Audit** | HF/LF | **Detect an HF/LF reader field** (which band + LF frequency), then emulate a card and classify the reader: **UID-only** vs **crypto** (RATS/auth), and flag **writes-back** (anti-passback/counter). Saves a report. |
+| **Dual-Tech Scan** | LF+HF | Detect combo cards; flag OR-logic; point iCLASS cases to HF Card ID / Picopass. |
+| **Card Audit** | LF+HF | Authorization-gated read → classify → **actively verify** (Mifare Classic 37-key dictionary dump + save clone; **static-key** + **Fudan-backdoor** flags; DESFire generation + config; NTAG page) → SD report + viewer; load `.nfc` offline. |
 | **Blank Validator** | LF+HF | Non-destructive writeability test + **magic identifier**: gen1a / CUID-gen2 / **gen3** / GDM / proprietary / normal. Auto LF-then-HF scan. |
 | **Clone Writer** | HF | Write a Mifare Classic dump onto a magic blank — from a live-read source **or** a saved `.nfc`; multi-key per block. |
 | **Cloner Sniffer** | HF | Card-emulation trap: emulate a card and log every frame a writer/cloner sends (passive / ACK-knocks / raw / full-MFC), capturing auth nonces for MFKey. |
@@ -31,7 +32,7 @@ Built and verified against **Momentum firmware** (API 87.1, SDK `mntm-012`) with
 
 ## Install (no build)
 
-Copy the ten `.fap` files from [`release/swissnfcrfid/`](release/swissnfcrfid) into a
+Copy the eleven `.fap` files from [`release/swissnfcrfid/`](release/swissnfcrfid) into a
 folder `apps/swissnfcrfid/` on the Flipper SD card (qFlipper or the mobile app). They
 appear together under **Apps → swissnfcrfid** on the device.
 
@@ -65,9 +66,11 @@ This toolkit intentionally leaves some gaps that purpose-built tools fill:
 
 - [`docs/RFID_clone_reference.html`](docs/RFID_clone_reference.html) — the "can I clone
   this card?" (dd) model + full vulnerability matrix.
+- [`docs/research/`](docs/research) — reader-side security research corpus (sourced):
+  reader-vuln survey, Wiegand/OSDP build specs, iCLASS/Picopass/SEOS, reader-auth &
+  replay + a Reader Audit v2 spec, and the Proxmark5 / Flipper-integration status.
 - [`docs/APPS_AND_TOOLS.txt`](docs/APPS_AND_TOOLS.txt) — per-app manual + companion tools.
 - [`VULN_CATALOG.md`](VULN_CATALOG.md) — vulnerability catalog + detection signatures.
-- [`STATUS.md`](STATUS.md) — engineering notes, build/deploy, bench-test progress.
 
 ## License
 
