@@ -15,8 +15,8 @@ firmware (API 87.1). Rebuild from the source/ folders for other firmware.
   cloner_sniff/      "Cloner Sniffer"   HF         log a writer/cloner's frames + nonces
   gen3_test/         "Gen3 Probe"       HF         non-destructive Gen3 (APDU) magic test
   card_emu/          "Card Emulator"    HF         the Flipper BECOMES a saved card
-  VULN_CATALOG.md    sourced vulnerability catalog + detection signatures
-  RFID_clone_reference.html   the "can I clone this card?" (dd) model + vuln matrix
+  research/vulnerability-catalog.md   card-side vuln catalog + detection signatures
+  research/clone-and-vuln-reference.html  the "can I clone this card?" (dd) model + vuln matrix
   research/          reader-side security research corpus (sourced)
 
 --------------------------------------------------------------------------------

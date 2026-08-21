@@ -64,13 +64,13 @@ This toolkit intentionally leaves some gaps that purpose-built tools fill:
 
 ## Docs
 
-- [`docs/RFID_clone_reference.html`](docs/RFID_clone_reference.html) — the "can I clone
-  this card?" (dd) model + full vulnerability matrix.
-- [`docs/research/`](docs/research) — reader-side security research corpus (sourced):
-  reader-vuln survey, Wiegand/OSDP build specs, iCLASS/Picopass/SEOS, reader-auth &
-  replay + a Reader Audit v2 spec, and the Proxmark5 / Flipper-integration status.
+- [`docs/research/`](docs/research) — **the full security research corpus** (sourced), both
+  card-side and reader-side:
+  - `vulnerability-catalog.md` — card-side vuln catalog + detection signatures
+  - `clone-and-vuln-reference.html` — the "can I clone this card?" (dd) model + vuln matrix
+  - `reader-side-vulnerabilities.md`, `wiegand-osdp.md`, `iclass-picopass-seos.md`,
+    `reader-auth-replay.md` (incl. a Reader Audit v2 spec), `proxmark5.md`
 - [`docs/APPS_AND_TOOLS.txt`](docs/APPS_AND_TOOLS.txt) — per-app manual + companion tools.
-- [`VULN_CATALOG.md`](VULN_CATALOG.md) — vulnerability catalog + detection signatures.
 
 ## License
 

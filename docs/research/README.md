@@ -9,6 +9,13 @@ access-control **reader/panel**, beyond the card-side default-key fuzzing.
 
 ## Contents
 
+### Card-side (what the card is / can it be cloned)
+| Doc | Topic |
+|-----|-------|
+| [vulnerability-catalog.md](vulnerability-catalog.md) | The card-side vulnerability catalog + detection signatures — the classifier reference behind the Stepper / Card Audit verdicts (BROKEN / CLONE / SECURE / UNK), sourced per row |
+| [clone-and-vuln-reference.html](clone-and-vuln-reference.html) | The "can I clone this card?" (dd) model + full vulnerability matrix (open in a browser) |
+
+### Reader-side (what the reader/panel does with the card)
 | Doc | Topic |
 |-----|-------|
 | [reader-side-vulnerabilities.md](reader-side-vulnerabilities.md) | Broad survey of reader-side vuln classes + Flipper-testability + top-5 feature shortlist |
