@@ -7,4 +7,5 @@ App(
     fap_category="NFC",
     fap_description="Scan a card on both 125kHz LF and 13.56MHz HF and flag combo (dual-tech) cards used in weak OR-logic access systems.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )

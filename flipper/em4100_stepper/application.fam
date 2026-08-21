@@ -7,4 +7,5 @@ App(
     fap_category="RFID",
     fap_description="Read an LF RFID card (EM4100 & more), step the ID up/down, emulate or auto-sweep. Load/save .rfid files.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )

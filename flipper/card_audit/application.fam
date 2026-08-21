@@ -7,4 +7,5 @@ App(
     fap_category="NFC",
     fap_description="Authorized defensive audit: read a card, classify it, actively verify the weakness (default keys / GetVersion / read), and write a report to SD. Authorized use only.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )

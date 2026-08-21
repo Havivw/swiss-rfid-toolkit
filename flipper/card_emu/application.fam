@@ -7,4 +7,5 @@ App(
     fap_category="NFC",
     fap_description="Wallet emulator: pick a saved .nfc and the Flipper BECOMES that card (full Mifare Classic data, UID, or Ultralight). One device replaces your cards. Authorized use only.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )

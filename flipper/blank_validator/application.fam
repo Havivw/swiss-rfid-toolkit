@@ -7,4 +7,5 @@ App(
     fap_category="RFID",
     fap_description="Validate a writeable LF blank (T5577/EM4305): read original, write a test ID, read back to confirm it took, then restore the original. Reports writeable + type.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )

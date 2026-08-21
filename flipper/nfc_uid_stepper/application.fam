@@ -7,4 +7,5 @@ App(
     fap_category="NFC",
     fap_description="Read/seed an ISO14443-A UID (4/7 byte), step it up/down, emulate or auto-sweep to a reader.",
     fap_version="1.0",
+    fap_icon="icon.png",
 )
